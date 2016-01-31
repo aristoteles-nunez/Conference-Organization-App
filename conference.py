@@ -50,6 +50,7 @@ DEFAULTS = {
     "topics": [ "Default", "Topic" ],
 }
 
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 @endpoints.api( name='conference',
@@ -256,7 +257,8 @@ class ConferenceApi(remote.Service):
     def filterPlayground(self, request):
         q = Conference.query()
         # simple filter usage:
-        # q = q.filter(Conference.city == "Paris")
+        q = q.filter(Conference.city == "Paris")
+        q = q.filter(Conference.seatsAvailable > 0)
 
         # advanced filter building and usage
         field = "city"
@@ -268,8 +270,13 @@ class ConferenceApi(remote.Service):
         # Adding second filter
         q = q.filter(Conference.topics == "Medical Innovations")
 
+        # Filter for big conferences
+        q = q.filter(Conference.maxAttendees > 50)
+
         # Sorting by name
         q = q.order(Conference.name)
+
+
 
         return ConferenceForms(
             items=[self._copyConferenceToForm(conf, "") for conf in q]
