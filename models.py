@@ -138,6 +138,7 @@ class Session(ndb.Model):
 
 
 class SessionForm(messages.Message):
+    """SessionForm -- Session outbound form message"""
     name = messages.StringField(1, required=True)
     highlights = messages.StringField(2, repeated=True)
     speaker = messages.StringField(3)
@@ -146,3 +147,8 @@ class SessionForm(messages.Message):
     date = messages.StringField(6)
     startTime = messages.StringField(7)
     websafeKey = messages.StringField(8)
+
+
+class SessionForms(messages.Message):
+    """SessionForms -- multiple Session outbound form message"""
+    items = messages.MessageField(SessionForm, 1, repeated=True)

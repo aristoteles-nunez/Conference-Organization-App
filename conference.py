@@ -37,6 +37,7 @@ from models import ConflictException
 from models import StringMessage
 from models import Session
 from models import SessionForm
+from models import SessionForms
 
 from settings import WEB_CLIENT_ID
 from utils import getUserId
@@ -81,6 +82,11 @@ CONF_GET_REQUEST = endpoints.ResourceContainer(
 
 CONF_POST_REQUEST = endpoints.ResourceContainer(
     ConferenceForm,
+    websafeConferenceKey=messages.StringField(1),
+)
+
+SESSION_GET_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
     websafeConferenceKey=messages.StringField(1),
 )
 
@@ -648,6 +654,22 @@ class ConferenceApi(remote.Service):
         """
         print("Creating session...")
         return self._createSessionObject(request)
+
+    @endpoints.method(SESSION_GET_REQUEST, SessionForms,
+                      path='conference/{websafeConferenceKey}/session',
+                      http_method='GET', name='getConferenceSessions')
+    def getConferenceSessions(self, request):
+        """ Given a conference, return all sessions """
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey)
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
+        sessions = Session.query(ancestor=conf)
+        print("Sessions obtained....")
+        print(sessions)
+        return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
+
+
 
 # registers API
 api = endpoints.api_server([ConferenceApi]) 
