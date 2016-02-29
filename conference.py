@@ -101,6 +101,11 @@ SESSION_BY_TYPE_GET_REQUEST = endpoints.ResourceContainer(
     typeOfSession=messages.StringField(2),
 )
 
+SESSION_BY_SPEAKER_GET_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    speaker=messages.StringField(1),
+)
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -690,6 +695,22 @@ class ConferenceApi(remote.Service):
                 'No conference found with key: %s' % request.websafeConferenceKey)
 
         sessions = Session.query(ancestor=conf).filter(Session.typeOfSession == request.typeOfSession)
+        # print("Sessions obtained....")
+        # print(sessions)
+        return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
+
+    @endpoints.method(SESSION_BY_SPEAKER_GET_REQUEST, SessionForms,
+                      path='session/speaker/{speaker}',
+                      http_method='GET', name='getConferenceSessionsBySpeaker')
+    def getConferenceSessionsBySpeaker(self, request):
+        """  Given a speaker, return all sessions given by this particular speaker, across all conferences
+        """
+        if not request.speaker:
+            raise endpoints.BadRequestException("Session 'speaker' field required")
+
+
+        sessions = Session.query().filter(Session.speaker == request.speaker)
+
         print("Sessions obtained....")
         print(sessions)
         return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
