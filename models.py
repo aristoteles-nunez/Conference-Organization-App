@@ -121,3 +121,28 @@ class ConferenceQueryForms(messages.Message):
 class StringMessage(messages.Message):
     """StringMessage-- outbound (single) string message"""
     data = messages.StringField(1, required=True)
+
+
+class Session(ndb.Model):
+    """ Session Object.
+    The speaker must be a registered user, so in that way we can obtain his complete Profile.
+    """
+    name = ndb.StringProperty(required=True)
+    highlights = ndb.StringProperty(repeated=True)
+    speaker = ndb.StringProperty()
+    duration = ndb.IntegerProperty() # In minutes
+    typeOfSession = ndb.StringProperty()
+    date = ndb.DateProperty()
+    startTime = ndb.TimeProperty()
+    conferenceId = ndb.KeyProperty(kind='Conference')
+
+
+class SessionForm(messages.Message):
+    name = messages.StringField(1, required=True)
+    highlights = messages.StringField(2, repeated=True)
+    speaker = messages.StringField(3)
+    duration = messages.IntegerField(4, variant=messages.Variant.INT32)
+    typeOfSession = messages.StringField(5)
+    date = messages.StringField(6)
+    startTime = messages.StringField(7)
+    websafeKey = messages.StringField(8)
