@@ -106,6 +106,10 @@ SESSION_BY_SPEAKER_GET_REQUEST = endpoints.ResourceContainer(
     speaker=messages.StringField(1),
 )
 
+SESSION_WISHLIST_POST_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    websafeSessionKey=messages.StringField(1),
+)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
@@ -708,14 +712,57 @@ class ConferenceApi(remote.Service):
         if not request.speaker:
             raise endpoints.BadRequestException("Session 'speaker' field required")
 
-
         sessions = Session.query().filter(Session.speaker == request.speaker)
-
-        print("Sessions obtained....")
-        print(sessions)
+        # print("Sessions obtained....")
+        # print(sessions)
         return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
 
+    # - - - WishList  - - - - - - - - - - - - - - - - - - -
 
+    @ndb.transactional(xg=True)
+    def _sessionToWishlist(self, request, reg=True):
+        """Register or unregister session in wishlist"""
+        retval = None
+        prof = self._getProfileFromUser() # get user Profile
+
+        # check if session exists given websafeSessionKey
+        # get session; check that it exists
+        wssk = request.websafeSessionKey
+        session = ndb.Key(urlsafe=wssk).get()
+        if not session:
+            raise endpoints.NotFoundException(
+                'No session found with key: %s' % wssk)
+        # register
+        if reg:
+            # check if user already registered otherwise add
+            if wssk in prof.sessionKeysToWishlist:
+                raise ConflictException(
+                    "You have already added this session to wishlist")
+            # register session to wishlist
+            prof.sessionKeysToWishlist.append(wssk)
+            retval = True
+
+        # unregister
+        else:
+            # check if session already in wishlist
+            if wssk in prof.sessionKeysToWishlist:
+                # unregister session
+                prof.sessionKeysToWishlist.remove(wssk)
+                retval = True
+            else:
+                retval = False
+        # write things back to the datastore & return
+        prof.put()
+        return BooleanMessage(data=retval)
+
+    @endpoints.method(SESSION_WISHLIST_POST_REQUEST, BooleanMessage,
+                      path='session/wishlist/{websafeSessionKey}',
+                      http_method='POST', name='addSessionToWishlist')
+    def addSessionToWishlist(self, request):
+        """ Adds the session to the user's list of sessions they are interested in attending
+            The wishlist is open to all conferences.
+        """
+        return self._sessionToWishlist(request)
 
 
 # registers API
