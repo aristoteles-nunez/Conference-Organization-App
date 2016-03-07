@@ -611,6 +611,8 @@ class ConferenceApi(remote.Service):
                 # convert Date to date string; just copy others
                 if field.name == "date":
                     setattr(sf, field.name, str(getattr(conf, field.name)))
+                elif field.name == "startTime":
+                    setattr(sf, field.name, str(getattr(conf, field.name)))
                 else:
                     setattr(sf, field.name, getattr(conf, field.name))
             elif field.name == "websafeKey":
