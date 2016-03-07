@@ -45,6 +45,7 @@ from utils import getUserId
 EMAIL_SCOPE = endpoints.EMAIL_SCOPE
 API_EXPLORER_CLIENT_ID = endpoints.API_EXPLORER_CLIENT_ID
 MEMCACHE_ANNOUNCEMENTS_KEY = "RECENT_ANNOUNCEMENTS"
+MEMCACHE_FEATURED_SPEAKER_KEY = "FEATURED_SPEAKER"
 
 DEFAULTS = {
     "city": "Default City",
@@ -671,7 +672,17 @@ class ConferenceApi(remote.Service):
         print(data)
         print(conf)
         print("End printing request and data")
+
         Session(**data).put()
+
+        print("Executing queue with : {}, {}".format(data['speaker'], conf.name))
+        taskqueue.add(params=
+                      {
+                          'speaker':data['speaker'],
+                          'conferenceName': conf.name,
+                          'conferenceKey': request.websafeConferenceKey
+                      },
+                      url='/tasks/featured_speaker')
 
         return self._copySessionToForm(request)
 
@@ -869,6 +880,19 @@ class ConferenceApi(remote.Service):
         """
         return self._sessionToWishlist(request, reg=False)
 
+
+    # - - - Featured speaker  - - - - - - - - - - - - - - - - - - -
+
+    @endpoints.method(SESSION_GET_REQUEST, StringMessage,
+                      path='conference/{websafeConferenceKey}/session/featuredspeaker',
+                      http_method='GET', name='getFeaturedSpeaker')
+    def getFeaturedSpeaker(self, request):
+        """Return Featured Speaker from memcache."""
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey)
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
+        return StringMessage(data=memcache.get(MEMCACHE_FEATURED_SPEAKER_KEY) or "")
 
 
 # registers API
