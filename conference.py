@@ -773,6 +773,27 @@ class ConferenceApi(remote.Service):
         return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
 
 
+    @endpoints.method(CONF_GET_REQUEST, SessionForms,
+                      path='conference/{websafeConferenceKey}/session/playground',
+                      http_method='GET', name='sessionPlayground')
+    def sessionPlayground(self, request):
+        """ Query for all non-workshop sessions before 7 pm
+        """
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey)
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
+        sevenPm = datetime.strptime("19:00", '%H:%M').time()
+        sessions = Session.query(ancestor=conf)
+        sessions = sessions.filter(Session.typeOfSession != "Workshop")
+        #sessions = sessions.filter(Session.startTime < sevenPm)
+
+        print("Sessions obtained....")
+        print(sessions)
+        return SessionForms(items=[self._copySessionToForm(session) for session in sessions
+                                   if session.startTime < sevenPm])
+
+
 
     # - - - WishList  - - - - - - - - - - - - - - - - - - -
 
