@@ -126,7 +126,6 @@ class StringMessage(messages.Message):
 
 class Session(ndb.Model):
     """ Session Object.
-    The speaker must be a registered user, so in that way we can obtain his complete Profile.
     """
     name = ndb.StringProperty(required=True)
     highlights = ndb.StringProperty(repeated=True)
