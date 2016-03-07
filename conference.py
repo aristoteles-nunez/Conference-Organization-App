@@ -107,6 +107,12 @@ SESSION_BY_HIGHLIGHT_GET_REQUEST = endpoints.ResourceContainer(
     highlight=messages.StringField(2),
 )
 
+SESSION_BY_DATE_GET_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    websafeConferenceKey=messages.StringField(1),
+    date=messages.StringField(2),
+)
+
 SESSION_BY_SPEAKER_GET_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
     speaker=messages.StringField(1),
@@ -676,6 +682,7 @@ class ConferenceApi(remote.Service):
         print("Creating session...")
         return self._createSessionObject(request)
 
+
     @endpoints.method(SESSION_GET_REQUEST, SessionForms,
                       path='conference/{websafeConferenceKey}/session',
                       http_method='GET', name='getConferenceSessions')
@@ -689,6 +696,7 @@ class ConferenceApi(remote.Service):
         # print("Sessions obtained....")
         # print(sessions)
         return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
+
 
     @endpoints.method(SESSION_BY_TYPE_GET_REQUEST, SessionForms,
                       path='conference/{websafeConferenceKey}/session/type/{typeOfSession}',
@@ -708,6 +716,7 @@ class ConferenceApi(remote.Service):
         # print("Sessions obtained....")
         # print(sessions)
         return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
+
 
     @endpoints.method(SESSION_BY_SPEAKER_GET_REQUEST, SessionForms,
                       path='session/speaker/{speaker}',
@@ -739,6 +748,26 @@ class ConferenceApi(remote.Service):
                 'No conference found with key: %s' % request.websafeConferenceKey)
 
         sessions = Session.query(ancestor=conf).filter(Session.highlights == request.highlight)
+        print("Sessions obtained....")
+        print(sessions)
+        return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
+
+
+    @endpoints.method(SESSION_BY_DATE_GET_REQUEST, SessionForms,
+                      path='conference/{websafeConferenceKey}/session/date/{date}',
+                      http_method='GET', name='getConferenceSessionsByDate')
+    def getConferenceSessionsByDate(self, request):
+        """  Given a conference, return all sessions of a specified starttime
+        """
+        if not request.date:
+            raise endpoints.BadRequestException("Session 'date' field required")
+
+        request_date = datetime.strptime(request.date[:10], "%Y-%m-%d").date()
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey)
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
+        sessions = Session.query(ancestor=conf).filter(Session.date >= request_date)
         print("Sessions obtained....")
         print(sessions)
         return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
@@ -805,6 +834,7 @@ class ConferenceApi(remote.Service):
 
         # return set of SessionForm objects per Session
         return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
+
 
     @endpoints.method(SESSION_WISHLIST_POST_REQUEST, BooleanMessage,
                       path='session/wishlist/delete/{websafeSessionKey}',
