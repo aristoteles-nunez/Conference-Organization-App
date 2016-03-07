@@ -101,6 +101,12 @@ SESSION_BY_TYPE_GET_REQUEST = endpoints.ResourceContainer(
     typeOfSession=messages.StringField(2),
 )
 
+SESSION_BY_HIGHLIGHT_GET_REQUEST = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    websafeConferenceKey=messages.StringField(1),
+    highlight=messages.StringField(2),
+)
+
 SESSION_BY_SPEAKER_GET_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
     speaker=messages.StringField(1),
@@ -716,6 +722,28 @@ class ConferenceApi(remote.Service):
         # print("Sessions obtained....")
         # print(sessions)
         return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
+
+
+    @endpoints.method(SESSION_BY_HIGHLIGHT_GET_REQUEST, SessionForms,
+                      path='conference/{websafeConferenceKey}/session/highlight/{highlight}',
+                      http_method='GET', name='getConferenceSessionsByHighlight')
+    def getConferenceSessionsByHighlight(self, request):
+        """  Given a conference, return all sessions of a specified highlight
+        """
+        if not request.highlight:
+            raise endpoints.BadRequestException("Session 'highlight' field required")
+
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey)
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
+
+        sessions = Session.query(ancestor=conf).filter(Session.highlights == request.highlight)
+        print("Sessions obtained....")
+        print(sessions)
+        return SessionForms(items=[self._copySessionToForm(session) for session in sessions])
+
+
 
     # - - - WishList  - - - - - - - - - - - - - - - - - - -
 
